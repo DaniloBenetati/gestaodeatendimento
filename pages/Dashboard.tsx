@@ -59,8 +59,11 @@ const Dashboard: React.FC<DashboardProps> = ({
   const completedTodayCount = useMemo(() => todaySessions.filter(s => s.status === 'PAID').length, [todaySessions]);
 
   const getMinutes = (time: string) => {
-    if (!time) return 0;
-    const [h, m] = time.split(':').map(Number);
+    if (!time || !time.includes(':')) return 0;
+    const parts = time.split(':');
+    const h = parseInt(parts[0]);
+    const m = parseInt(parts[1]);
+    if (isNaN(h) || isNaN(m)) return 0;
     return h * 60 + m;
   };
 
@@ -84,7 +87,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     return providers.filter(p => p.active && !busyProviderNames.has(p.name));
   }, [providers, busyProviderNames]);
 
-  // LÓGICA DE CÁLCULO ATUALIZADA: MÍNIMO É SEMPRE O CONTRATADO SE O ATENDIMENTO EXISTIR
+  // LÓGICA DE CÁLCULO ATUALIZADA
   useEffect(() => {
     if (actualStartTime && actualEndTime && finishingSession) {
       const startMin = getMinutes(actualStartTime);
@@ -96,14 +99,9 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       const blocksOf30 = Math.floor(diff / 30);
       const extraMinutes = diff % 30;
-
-      // Lógica de tolerância de 10 min para cima (arredondamento para blocos de 30)
       const billableBlocks = extraMinutes > 10 ? blocksOf30 + 1 : blocksOf30;
       const calculatedBillableMinutes = billableBlocks * 30;
-
-      // REGRA: O mínimo a ser cobrado é o tempo contratado originalmente (30 ou 60)
       const contractedMinutes = finishingSession.durationMinutes;
-      // Garantimos que finalBillable seja no mínimo contractedMinutes se o atendimento foi iniciado
       const finalBillable = Math.max(calculatedBillableMinutes, contractedMinutes);
 
       setConsideredDuration(finalBillable);
@@ -123,22 +121,11 @@ const Dashboard: React.FC<DashboardProps> = ({
       const calculatedTotal = (hours * priceH) + (hasHalfHour ? price30 : 0);
       setFinalValue(Math.round(calculatedTotal));
 
-      // Calcular comissão padrão
+      // Comissões
       const commH = isVIP ? (rule1h?.loyaltyCommission || 150) : (rule1h?.regularCommission || 170);
       const comm30 = isVIP ? (rule30m?.loyaltyCommission || 90) : (rule30m?.regularCommission || 90);
       const defaultComm = Math.round((hours * commH) + (hasHalfHour ? comm30 : 0));
 
-      // Se editCommissions ainda não foi inicializado para este atendimento, inicializa
-      const newComms: Record<string, number> = {};
-      finishingSession.providerIds.forEach(pName => {
-        // Só sobrescreve se ainda não existir um valor para este profissional ou se o tempo mudou e não foi editado manualmente
-        // Simplificando: sempre inicializa quando o modal abre (handled no setFinishingSession)
-        // Mas aqui mantemos sincronizado com o tempo calculado
-        newComms[pName] = defaultComm;
-      });
-      // Só atualizado automaticamente se o usuário ainda não tiver editado nada? 
-      // Por simplicidade neste dashboard, vamos atualizar sempre que os tempos mudam, 
-      // mas o usuário pode editar depois.
       setEditCommissions(prev => {
         const updated = { ...prev };
         finishingSession.providerIds.forEach(pName => {
@@ -158,31 +145,19 @@ const Dashboard: React.FC<DashboardProps> = ({
   const handleCompleteFinish = () => {
     if (!finishingSession) return;
 
-    const customer = getCustomer(finishingSession.customerId);
-    const isVIP = customer?.isLoyalty || false;
-
-    const hours = Math.floor(consideredDuration / 60);
-    const hasHalfHour = (consideredDuration % 60) === 30;
-
-    const rule1h = pricing.find(r => r.durationMinutes === 60);
-    const rule30m = pricing.find(r => r.durationMinutes === 30);
-
-    const commH = isVIP ? (rule1h?.loyaltyCommission || 150) : (rule1h?.regularCommission || 170);
-    const comm30 = isVIP ? (rule30m?.loyaltyCommission || 90) : (rule30m?.regularCommission || 90);
-
-    const totalComm = (hours * commH) + (hasHalfHour ? comm30 : 0);
-
     const finalCommissions = finishingSession.providerIds.map(pName => ({
       providerId: pName,
       value: editCommissions[pName] !== undefined ? editCommissions[pName] : 0,
       status: 'PENDING' as const
     }));
 
-    onConfirm(finishingSession.id, finalMethod, Math.round(finalValue), finalCommissions);
+    const chargingValue = finalMethod === 'CARTÃO' ? finalValue + 20 : finalValue;
+
+    onConfirm(finishingSession.id, finalMethod, Math.round(chargingValue), finalCommissions);
     onUpdateSession(finishingSession.id, {
       status: 'PAID',
       isFinished: true,
-      totalValue: Math.round(finalValue),
+      totalValue: Math.round(chargingValue),
       startTime: actualStartTime,
       endTime: actualEndTime,
       durationMinutes: finalDuration,
@@ -247,7 +222,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               setFinishingSession(sess);
               setActualStartTime(sess.startTime);
               setActualEndTime(timeNow);
-              setEditCommissions({}); // Limpa para forçar recalculo no useEffect
+              setEditCommissions({});
             }} className={`px-4 md:px-5 py-3 rounded-xl font-black uppercase text-[9px] transition-all border ${isOverdue ? 'bg-red-600 text-white border-red-500 shadow-lg shadow-red-200' : 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-600 hover:text-white'}`}>
               Baixa
             </button>
@@ -280,7 +255,8 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
               <button onClick={() => setFinishingSession(null)} className="w-10 h-10 rounded-full bg-white border border-slate-200 text-slate-400 shrink-0"><i className="fas fa-times"></i></button>
             </div>
-            <div className="p-8 space-y-6">
+
+            <div className="p-8 space-y-6 overflow-y-auto max-h-[75vh]">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Início Real</label>
@@ -292,64 +268,86 @@ const Dashboard: React.FC<DashboardProps> = ({
                 </div>
               </div>
 
-              <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 text-center space-y-2">
-                <div className="flex justify-around items-center">
-                  <div>
-                    <p className="text-[8px] font-black text-slate-400 uppercase">Tempo Real</p>
-                    <p className="text-sm font-black text-slate-600">{formatTimeDisplay(finalDuration)}</p>
-                  </div>
-                  <div className="w-px h-8 bg-slate-200"></div>
-                  <div>
-                    <p className="text-[8px] font-black text-indigo-400 uppercase">Considerado</p>
-                    <p className="text-sm font-black text-indigo-600">{formatTimeDisplay(consideredDuration)}</p>
-                  </div>
+              <div className="flex justify-around items-center py-4 bg-slate-50/50 rounded-2xl border border-slate-100/50">
+                <div className="text-center">
+                  <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1">Tempo Real</p>
+                  <p className="text-xl font-black text-slate-700 leading-none">{(isNaN(finalDuration) || finalDuration <= 0) ? '--:--' : formatTimeDisplay(finalDuration)}</p>
                 </div>
-                <p className="text-[7px] text-slate-400 font-bold uppercase italic mt-1">Piso de cobrança: Tempo Contratado ({finishingSession.durationMinutes} min)</p>
+                <div className="w-px h-8 bg-slate-200"></div>
+                <div className="text-center">
+                  <p className="text-[7px] font-black text-indigo-400 uppercase tracking-widest mb-1">Considerado</p>
+                  <p className="text-xl font-black text-indigo-600 leading-none">{(isNaN(consideredDuration) || consideredDuration <= 0) ? '--:--' : formatTimeDisplay(consideredDuration)}</p>
+                </div>
               </div>
 
-              {finishingSession.providerIds.length > 1 && (
-                <div className="space-y-4 bg-indigo-50/50 p-6 rounded-[2rem] border border-indigo-100/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <i className="fas fa-users-cog text-indigo-400 text-[10px]"></i>
-                    <label className="text-[9px] font-black text-indigo-800 uppercase tracking-widest">Editar Repasses Individuais</label>
-                  </div>
-                  <div className="space-y-3">
-                    {finishingSession.providerIds.map(pName => (
-                      <div key={pName} className="flex items-center justify-between group">
-                        <span className="text-[9px] font-black text-slate-500 uppercase">{pName}</span>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[8px] font-black text-slate-300">R$</span>
-                          <input
-                            type="number"
-                            value={editCommissions[pName] || 0}
-                            onChange={e => setEditCommissions({ ...editCommissions, [pName]: Math.round(parseFloat(e.target.value) || 0) })}
-                            className="w-24 pl-8 pr-4 py-2 rounded-xl bg-white border border-slate-100 focus:border-indigo-400 outline-none font-black text-slate-700 text-[11px] text-center transition-all shadow-sm"
-                          />
-                        </div>
+              <div className="space-y-4 bg-indigo-50/50 p-6 rounded-[2rem] border border-indigo-100/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <i className="fas fa-users-cog text-indigo-400 text-[10px]"></i>
+                  <label className="text-[9px] font-black text-indigo-800 uppercase tracking-widest">Repasses Individuais</label>
+                </div>
+                <div className="space-y-3">
+                  {finishingSession.providerIds.map(pName => (
+                    <div key={pName} className="flex items-center justify-between group">
+                      <span className="text-[9px] font-black text-slate-500 uppercase">{pName}</span>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[8px] font-black text-slate-300">R$</span>
+                        <input
+                          type="number"
+                          value={editCommissions[pName] || 0}
+                          onChange={e => setEditCommissions({ ...editCommissions, [pName]: Math.round(parseFloat(e.target.value) || 0) })}
+                          className="w-24 pl-8 pr-4 py-2 rounded-xl bg-white border border-transparent focus:border-indigo-400 outline-none font-black text-slate-700 text-[11px] text-center transition-all shadow-sm"
+                        />
                       </div>
-                    ))}
-                  </div>
-                  <p className="text-[7px] text-indigo-400 font-bold uppercase text-center mt-2 italic">Ajuste os valores para cada profissional se necessário</p>
-                </div>
-              )}
-
-              <div className="text-center space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Valor Final (R$ Inteiro)</label>
-                <div className="relative group">
-                  <input type="number" value={finalValue} onChange={e => setFinalValue(Math.round(parseFloat(e.target.value)))} className="w-full px-6 py-5 rounded-3xl border-2 border-emerald-500 bg-white font-black text-4xl text-center text-emerald-600 outline-none shadow-xl shadow-emerald-50 transition-all focus:ring-4 focus:ring-emerald-500/10" />
-                  <div className="absolute -top-3 -right-3 bg-emerald-500 text-white w-8 h-8 rounded-full flex items-center justify-center shadow-lg"><i className="fas fa-coins text-[10px]"></i></div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Pagamento</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {['PIX', 'DINHEIRO', 'CARTÃO', 'OUTROS'].map(m => (
-                    <button key={m} onClick={() => setFinalMethod(m as any)} className={`py-3 rounded-xl text-[9px] font-black uppercase transition-all ${finalMethod === m ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 border border-slate-100'}`}>{m}</button>
+                    </div>
                   ))}
                 </div>
               </div>
-              <button onClick={handleCompleteFinish} className="w-full py-6 bg-emerald-600 text-white rounded-[2.5rem] font-black text-[11px] uppercase tracking-widest shadow-xl hover:bg-emerald-700 transition-all active:scale-[0.98]">BAIXA E CONCLUIR</button>
+
+              <div className="text-center space-y-4 pt-2">
+                <div className="inline-block px-4 py-1.5 bg-slate-100 rounded-full text-[8px] font-black text-slate-500 uppercase tracking-widest">Valor do Serviço / Desconto</div>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={finalValue}
+                    onChange={e => setFinalValue(Math.round(parseFloat(e.target.value) || 0))}
+                    className="w-full px-6 py-4 rounded-[2rem] border-2 border-slate-200 bg-white font-black text-3xl text-center text-slate-700 outline-none transition-all focus:border-indigo-400"
+                  />
+                  <div className="absolute -top-2 -right-2 bg-slate-800 text-white w-6 h-6 rounded-full flex items-center justify-center shadow-lg"><i className="fas fa-edit text-[8px]"></i></div>
+                </div>
+
+                {finalMethod === 'CARTÃO' && (
+                  <div className="flex items-center justify-center gap-2 py-2 px-4 bg-amber-50 rounded-2xl border border-amber-100 text-amber-600 animate-fadeIn">
+                    <i className="fas fa-info-circle text-[10px]"></i>
+                    <p className="text-[9px] font-black uppercase">+ Taxa Adicional Cartão: R$ 20,00</p>
+                  </div>
+                )}
+
+                <div className="pt-4 border-t border-slate-100">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Total a Pagar</p>
+                  <div className="text-5xl font-black text-emerald-600 tracking-tighter">
+                    R$ {Math.round(finalMethod === 'CARTÃO' ? finalValue + 20 : finalValue)}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 text-center block">Forma de Pagamento</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {['PIX', 'DINHEIRO', 'CARTÃO', 'OUTROS'].map(m => (
+                    <button key={m} onClick={() => setFinalMethod(m as any)} className={`py-4 rounded-2xl text-[10px] font-black uppercase transition-all flex items-center justify-center space-x-2 ${finalMethod === m ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-slate-50 text-slate-400 border border-slate-100'}`}>
+                      {m === 'CARTÃO' && <i className="fas fa-credit-card text-[9px]"></i>}
+                      <span>{m}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                onClick={handleCompleteFinish}
+                className="w-full py-6 bg-emerald-600 text-white rounded-[2.5rem] font-black text-[12px] uppercase tracking-[0.3em] shadow-xl shadow-emerald-50 hover:bg-emerald-700 transition-all active:scale-[0.98] mt-4"
+              >
+                BAIXA E CONCLUIR
+              </button>
             </div>
           </div>
         </div>
