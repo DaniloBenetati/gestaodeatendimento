@@ -66,6 +66,13 @@ const Dashboard: React.FC<DashboardProps> = ({
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
   const getCustomer = (id: string) => customers.find(c => c.id === id);
 
+  const formatHHMM = (time: string) => {
+    if (!time) return '';
+    const parts = time.split(':');
+    if (parts.length < 2) return time;
+    return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+  };
+
   const busyProviderNames = useMemo(() => {
     const busy = new Set<string>();
     activeSessions.forEach(s => s.providerIds.forEach(p => busy.add(p)));
@@ -196,7 +203,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           <div className="flex items-center bg-slate-50 p-1 rounded-2xl border border-slate-200/50 shadow-inner shrink-0">
             <div className="text-center px-3 md:px-5 py-1.5 border-r border-slate-200/60">
               <p className="text-[7px] font-black text-slate-400 uppercase tracking-tighter">Início</p>
-              <p className="text-[10px] font-black text-slate-700 leading-none mt-1">{sess.startTime}</p>
+              <p className="text-[10px] font-black text-slate-700 leading-none mt-1">{formatHHMM(sess.startTime)}</p>
             </div>
             <div className="text-center px-3 md:px-5 py-1.5">
               <p className={`text-[7px] font-black uppercase tracking-tighter ${isOverdue ? 'text-red-400' : 'text-indigo-400'}`}>Previsão</p>
@@ -362,7 +369,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               return (
                 <div key={sess.id} className="p-5 bg-white rounded-[2rem] border border-slate-100 shadow-sm flex items-center justify-between group animate-fadeIn">
                   <div className="flex items-center space-x-4">
-                    <div className="px-3 py-2 rounded-xl border bg-indigo-50 border-indigo-100 text-indigo-600 font-black text-[10px]">{sess.startTime}h</div>
+                    <div className="px-3 py-2 rounded-xl border bg-indigo-50 border-indigo-100 text-indigo-600 font-black text-[10px]">{formatHHMM(sess.startTime)}h</div>
                     <div>
                       <p className="text-xs font-black text-slate-800 uppercase leading-none truncate">{customer?.name || 'Cliente'}</p>
                       <p className="text-[9px] font-bold text-slate-400 uppercase mt-1">Sala {sess.room} • {formatTimeDisplay(sess.durationMinutes)} • {sess.providerIds.join(', ')}</p>
@@ -396,7 +403,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <div key={sess.id} className="p-5 bg-red-50/50 rounded-[2rem] border border-red-100/50 shadow-sm flex items-center justify-between group animate-fadeIn grayscale hover:grayscale-0 transition-all">
                   <div className="flex items-center space-x-4">
                     <div className="px-3 py-2 rounded-xl border bg-white border-red-100 text-red-300 font-black text-[10px] relative">
-                      {sess.startTime}h
+                      {formatHHMM(sess.startTime)}h
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <div className="w-full h-px bg-red-300 rotate-12"></div>
                       </div>
