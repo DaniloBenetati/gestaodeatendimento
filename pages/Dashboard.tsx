@@ -32,6 +32,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [finalDuration, setFinalDuration] = useState<number>(0);
   const [consideredDuration, setConsideredDuration] = useState<number>(0);
   const [finalMethod, setFinalMethod] = useState<PaymentMethod>('PIX');
+  const [editCommissions, setEditCommissions] = useState<Record<string, number>>({});
   const [now, setNow] = useState(new Date());
 
   const getBrazilDate = () => {
@@ -121,6 +122,30 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       const calculatedTotal = (hours * priceH) + (hasHalfHour ? price30 : 0);
       setFinalValue(Math.round(calculatedTotal));
+
+      // Calcular comissão padrão
+      const commH = isVIP ? (rule1h?.loyaltyCommission || 150) : (rule1h?.regularCommission || 170);
+      const comm30 = isVIP ? (rule30m?.loyaltyCommission || 90) : (rule30m?.regularCommission || 90);
+      const defaultComm = Math.round((hours * commH) + (hasHalfHour ? comm30 : 0));
+
+      // Se editCommissions ainda não foi inicializado para este atendimento, inicializa
+      const newComms: Record<string, number> = {};
+      finishingSession.providerIds.forEach(pName => {
+        // Só sobrescreve se ainda não existir um valor para este profissional ou se o tempo mudou e não foi editado manualmente
+        // Simplificando: sempre inicializa quando o modal abre (handled no setFinishingSession)
+        // Mas aqui mantemos sincronizado com o tempo calculado
+        newComms[pName] = defaultComm;
+      });
+      // Só atualizado automaticamente se o usuário ainda não tiver editado nada? 
+      // Por simplicidade neste dashboard, vamos atualizar sempre que os tempos mudam, 
+      // mas o usuário pode editar depois.
+      setEditCommissions(prev => {
+        const updated = { ...prev };
+        finishingSession.providerIds.forEach(pName => {
+          if (updated[pName] === undefined) updated[pName] = defaultComm;
+        });
+        return updated;
+      });
     }
   }, [actualStartTime, actualEndTime, finishingSession, pricing]);
 
@@ -149,7 +174,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
     const finalCommissions = finishingSession.providerIds.map(pName => ({
       providerId: pName,
-      value: Math.round(totalComm),
+      value: editCommissions[pName] !== undefined ? editCommissions[pName] : 0,
       status: 'PENDING' as const
     }));
 
@@ -222,6 +247,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               setFinishingSession(sess);
               setActualStartTime(sess.startTime);
               setActualEndTime(timeNow);
+              setEditCommissions({}); // Limpa para forçar recalculo no useEffect
             }} className={`px-4 md:px-5 py-3 rounded-xl font-black uppercase text-[9px] transition-all border ${isOverdue ? 'bg-red-600 text-white border-red-500 shadow-lg shadow-red-200' : 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-600 hover:text-white'}`}>
               Baixa
             </button>
@@ -280,6 +306,32 @@ const Dashboard: React.FC<DashboardProps> = ({
                 </div>
                 <p className="text-[7px] text-slate-400 font-bold uppercase italic mt-1">Piso de cobrança: Tempo Contratado ({finishingSession.durationMinutes} min)</p>
               </div>
+
+              {finishingSession.providerIds.length > 1 && (
+                <div className="space-y-4 bg-indigo-50/50 p-6 rounded-[2rem] border border-indigo-100/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <i className="fas fa-users-cog text-indigo-400 text-[10px]"></i>
+                    <label className="text-[9px] font-black text-indigo-800 uppercase tracking-widest">Editar Repasses Individuais</label>
+                  </div>
+                  <div className="space-y-3">
+                    {finishingSession.providerIds.map(pName => (
+                      <div key={pName} className="flex items-center justify-between group">
+                        <span className="text-[9px] font-black text-slate-500 uppercase">{pName}</span>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[8px] font-black text-slate-300">R$</span>
+                          <input
+                            type="number"
+                            value={editCommissions[pName] || 0}
+                            onChange={e => setEditCommissions({ ...editCommissions, [pName]: Math.round(parseFloat(e.target.value) || 0) })}
+                            className="w-24 pl-8 pr-4 py-2 rounded-xl bg-white border border-slate-100 focus:border-indigo-400 outline-none font-black text-slate-700 text-[11px] text-center transition-all shadow-sm"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[7px] text-indigo-400 font-bold uppercase text-center mt-2 italic">Ajuste os valores para cada profissional se necessário</p>
+                </div>
+              )}
 
               <div className="text-center space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Valor Final (R$ Inteiro)</label>
