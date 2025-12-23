@@ -280,28 +280,30 @@ const Dashboard: React.FC<DashboardProps> = ({
                 </div>
               </div>
 
-              <div className="space-y-4 bg-indigo-50/50 p-6 rounded-[2rem] border border-indigo-100/30">
-                <div className="flex items-center gap-2 mb-2">
-                  <i className="fas fa-users-cog text-indigo-400 text-[10px]"></i>
-                  <label className="text-[9px] font-black text-indigo-800 uppercase tracking-widest">Repasses Individuais</label>
-                </div>
-                <div className="space-y-3">
-                  {finishingSession.providerIds.map(pName => (
-                    <div key={pName} className="flex items-center justify-between group">
-                      <span className="text-[9px] font-black text-slate-500 uppercase">{pName}</span>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[8px] font-black text-slate-300">R$</span>
-                        <input
-                          type="number"
-                          value={editCommissions[pName] || 0}
-                          onChange={e => setEditCommissions({ ...editCommissions, [pName]: Math.round(parseFloat(e.target.value) || 0) })}
-                          className="w-24 pl-8 pr-4 py-2 rounded-xl bg-white border border-transparent focus:border-indigo-400 outline-none font-black text-slate-700 text-[11px] text-center transition-all shadow-sm"
-                        />
+              {finishingSession.providerIds.length > 1 && (
+                <div className="space-y-4 bg-indigo-50/50 p-6 rounded-[2rem] border border-indigo-100/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <i className="fas fa-users-cog text-indigo-400 text-[10px]"></i>
+                    <label className="text-[9px] font-black text-indigo-800 uppercase tracking-widest">Repasses Individuais</label>
+                  </div>
+                  <div className="space-y-3">
+                    {finishingSession.providerIds.map(pName => (
+                      <div key={pName} className="flex items-center justify-between group">
+                        <span className="text-[9px] font-black text-slate-500 uppercase">{pName}</span>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[8px] font-black text-slate-300">R$</span>
+                          <input
+                            type="number"
+                            value={editCommissions[pName] || 0}
+                            onChange={e => setEditCommissions({ ...editCommissions, [pName]: Math.round(parseFloat(e.target.value) || 0) })}
+                            className="w-24 pl-8 pr-4 py-2 rounded-xl bg-white border border-transparent focus:border-indigo-400 outline-none font-black text-slate-700 text-[11px] text-center transition-all shadow-sm"
+                          />
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="text-center space-y-4 pt-2">
                 <div className="inline-block px-4 py-1.5 bg-slate-100 rounded-full text-[8px] font-black text-slate-500 uppercase tracking-widest">Valor do Serviço / Desconto</div>
