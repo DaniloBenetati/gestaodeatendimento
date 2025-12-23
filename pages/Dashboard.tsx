@@ -55,7 +55,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
-    }).format(val || 0);
+    }).format(isNaN(val) ? 0 : (val || 0));
   };
 
   const today = getBrazilDate();
@@ -178,8 +178,12 @@ const Dashboard: React.FC<DashboardProps> = ({
   const renderActiveCard = (sess: Session) => {
     const customer = getCustomer(sess.customerId);
     const startMin = getMinutes(sess.startTime);
-    const scheduledEndMin = startMin + sess.durationMinutes;
+    const scheduledEndMin = startMin + (sess.durationMinutes || 0);
     const isOverdue = currentMinutes > scheduledEndMin;
+
+    const displayPrevisao = isNaN(scheduledEndMin)
+      ? '--:--'
+      : `${Math.floor(scheduledEndMin / 60).toString().padStart(2, '0')}:${(scheduledEndMin % 60).toString().padStart(2, '0')}`;
     const customerName = customer?.name || 'Cliente';
 
     return (
@@ -215,7 +219,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div className="text-center px-3 md:px-5 py-1.5">
               <p className={`text-[7px] font-black uppercase tracking-tighter ${isOverdue ? 'text-red-400' : 'text-indigo-400'}`}>Previsão</p>
               <p className={`text-[10px] font-black leading-none mt-1 ${isOverdue ? 'text-red-700' : 'text-indigo-600'}`}>
-                {Math.floor(scheduledEndMin / 60).toString().padStart(2, '0')}:{(scheduledEndMin % 60).toString().padStart(2, '0')}
+                {displayPrevisao}
               </p>
             </div>
           </div>

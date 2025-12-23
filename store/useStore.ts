@@ -336,7 +336,8 @@ export const useStore = () => {
         isFinished: data.is_finished,
         recordedBy: data.recorded_by,
         totalValue: data.total_value,
-        priceRuleId: data.price_rule_id
+        priceRuleId: data.price_rule_id,
+        durationMinutes: data.duration_minutes
       };
       setSessions(prev => [...prev, formattedSession]);
     }
@@ -355,6 +356,7 @@ export const useStore = () => {
     if (updates.date !== undefined) dbUpdates.date = updates.date;
     if (updates.room !== undefined) dbUpdates.room = updates.room;
     if (updates.commissions !== undefined) dbUpdates.commissions = updates.commissions;
+    if (updates.durationMinutes !== undefined) dbUpdates.duration_minutes = updates.durationMinutes;
 
     const { error } = await supabase.from('sessions').update(dbUpdates).eq('id', id);
 
