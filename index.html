@@ -5,9 +5,25 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gestão de Atendimento - Profissional</title>
-  <!-- Tailwind via CDN para prototipagem rápida, como no original -->
+
+  <script>
+    // Captura erros antes mesmo do React carregar
+    window.onerror = function (msg, url, lineNo, columnNo, error) {
+      var debug = document.getElementById('debug-error');
+      if (debug) {
+        debug.innerHTML = '<div style="background: #fee; color: #b22; padding: 20px; border: 2px solid #f88; margin: 20px; border-radius: 10px; font-family: sans-serif;">' +
+          '<h2 style="margin:0 0 10px 0">Erro de Inicialização</h2>' +
+          '<p><strong>Erro:</strong> ' + msg + '</p>' +
+          '<p><strong>Arquivo:</strong> ' + url + ' (Linha: ' + lineNo + ')</p>' +
+          '</div>';
+      }
+      return false;
+    };
+  </script>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
@@ -85,8 +101,31 @@
 </head>
 
 <body class="bg-slate-50 text-slate-900 overflow-x-hidden">
-  <div id="root"></div>
-  <script type="module" src="./index.tsx"></script>
+  <div id="debug-error"></div>
+  <div id="root">
+    <div
+      style="height: 100vh; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 20px; background: white; font-family: sans-serif;">
+      <div
+        style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #4f46e5; border-radius: 50%; animation: spin 1s linear infinite;">
+      </div>
+      <p style="font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.2em; font-size: 10px;">
+        Iniciando Sistema...</p>
+    </div>
+  </div>
+
+  <style>
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+
+  <script type="module" src="/index.tsx"></script>
 </body>
 
 </html>
