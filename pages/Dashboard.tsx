@@ -51,6 +51,13 @@ const Dashboard: React.FC<DashboardProps> = ({
     return `${h}:${m.toString().padStart(2, '0')}`;
   };
 
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(val || 0);
+  };
+
   const today = getBrazilDate();
   const todaySessions = useMemo(() => sessions.filter(s => s.date === today), [sessions, today]);
   const activeSessions = useMemo(() => todaySessions.filter(s => s.status === 'PENDING' && !s.isFinished), [todaySessions]);
@@ -101,8 +108,8 @@ const Dashboard: React.FC<DashboardProps> = ({
       const extraMinutes = diff % 30;
       const billableBlocks = extraMinutes > 10 ? blocksOf30 + 1 : blocksOf30;
       const calculatedBillableMinutes = billableBlocks * 30;
-      const contractedMinutes = finishingSession.durationMinutes;
-      const finalBillable = Math.max(calculatedBillableMinutes, contractedMinutes);
+      const contractedMinutes = finishingSession.durationMinutes || 0;
+      const finalBillable = Math.max(calculatedBillableMinutes, contractedMinutes) || 0;
 
       setConsideredDuration(finalBillable);
 
@@ -119,12 +126,12 @@ const Dashboard: React.FC<DashboardProps> = ({
       const price30 = isVIP ? (rule30m?.loyaltyPrice || 190) : (rule30m?.regularPrice || 190);
 
       const calculatedTotal = (hours * priceH) + (hasHalfHour ? price30 : 0);
-      setFinalValue(Math.round(calculatedTotal));
+      setFinalValue(Math.round(calculatedTotal) || 0);
 
       // Comissões
       const commH = isVIP ? (rule1h?.loyaltyCommission || 150) : (rule1h?.regularCommission || 170);
       const comm30 = isVIP ? (rule30m?.loyaltyCommission || 90) : (rule30m?.regularCommission || 90);
-      const defaultComm = Math.round((hours * commH) + (hasHalfHour ? comm30 : 0));
+      const defaultComm = Math.round((hours * commH) + (hasHalfHour ? comm30 : 0)) || 0;
 
       setEditCommissions(prev => {
         const updated = { ...prev };
@@ -310,7 +317,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <div className="relative">
                   <input
                     type="number"
-                    value={finalValue}
+                    value={finalValue === 0 ? '' : finalValue}
+                    placeholder="0"
                     onChange={e => setFinalValue(Math.round(parseFloat(e.target.value) || 0))}
                     className="w-full px-6 py-4 rounded-[2rem] border-2 border-slate-200 bg-white font-black text-3xl text-center text-slate-700 outline-none transition-all focus:border-indigo-400"
                   />
@@ -320,14 +328,14 @@ const Dashboard: React.FC<DashboardProps> = ({
                 {finalMethod === 'CARTÃO' && (
                   <div className="flex items-center justify-center gap-2 py-2 px-4 bg-amber-50 rounded-2xl border border-amber-100 text-amber-600 animate-fadeIn">
                     <i className="fas fa-info-circle text-[10px]"></i>
-                    <p className="text-[9px] font-black uppercase">+ Taxa Adicional Cartão: R$ 20,00</p>
+                    <p className="text-[9px] font-black uppercase">+ Taxa Adicional Cartão: {formatCurrency(20)}</p>
                   </div>
                 )}
 
                 <div className="pt-4 border-t border-slate-100">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Total a Pagar</p>
                   <div className="text-5xl font-black text-emerald-600 tracking-tighter">
-                    R$ {Math.round(finalMethod === 'CARTÃO' ? finalValue + 20 : finalValue)}
+                    {formatCurrency(finalMethod === 'CARTÃO' ? finalValue + 20 : finalValue)}
                   </div>
                 </div>
               </div>
