@@ -249,6 +249,18 @@ export const useStore = () => {
           role: metadata.role || 'STAFF',
           active: true
         });
+        // Se houver sessão Supabase, removemos qualquer rastro de login manual/local
+        localStorage.removeItem('local_user');
+      } else {
+        // Tentar carregar usuário local se não houver Supabase
+        const savedUser = localStorage.getItem('local_user');
+        if (savedUser) {
+          try {
+            setCurrentUser(JSON.parse(savedUser));
+          } catch (e) {
+            localStorage.removeItem('local_user');
+          }
+        }
       }
     });
 
@@ -266,17 +278,23 @@ export const useStore = () => {
           role: metadata.role || 'STAFF',
           active: true
         });
+        localStorage.removeItem('local_user');
       } else if (event === 'SIGNED_OUT') {
         setCurrentUser(null);
+        localStorage.removeItem('local_user');
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const login = (user: User) => setCurrentUser(user);
+  const login = (user: User) => {
+    localStorage.setItem('local_user', JSON.stringify(user));
+    setCurrentUser(user);
+  };
   const logout = async () => {
     await supabase.auth.signOut();
+    localStorage.removeItem('local_user');
     setCurrentUser(null);
   };
 
