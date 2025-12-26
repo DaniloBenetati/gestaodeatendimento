@@ -35,6 +35,10 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [editCommissions, setEditCommissions] = useState<Record<string, number>>({});
   const [now, setNow] = useState(new Date());
 
+  // Estados locais para evitar pulos de cursor e lidar com placeholders (marca d'água)
+  const [localFinalValue, setLocalFinalValue] = useState<string>('');
+  const [localCommissions, setLocalCommissions] = useState<Record<string, string>>({});
+
   const getBrazilDate = () => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -137,10 +141,19 @@ const Dashboard: React.FC<DashboardProps> = ({
       setEditCommissions(prev => {
         const updated = { ...prev };
         finishingSession.providerIds.forEach(pName => {
-          if (updated[pName] === undefined) updated[pName] = defaultComm;
+          if (updated[pName] === undefined) {
+            updated[pName] = defaultComm;
+            // Atualiza o local string se não estiver editando
+            setLocalCommissions(loc => ({ ...loc, [pName]: defaultComm === 0 ? '' : defaultComm.toFixed(2) }));
+          }
         });
         return updated;
       });
+
+      // Sincroniza valor final se não for 0 e se o local estiver vazio
+      if (calculatedTotal !== 0 && !localFinalValue) {
+        setLocalFinalValue(calculatedTotal.toFixed(2));
+      }
     }
   }, [actualStartTime, actualEndTime, finishingSession, pricing]);
 
@@ -235,6 +248,8 @@ const Dashboard: React.FC<DashboardProps> = ({
               setActualStartTime(sess.startTime);
               setActualEndTime(timeNow);
               setEditCommissions({});
+              setLocalFinalValue('');
+              setLocalCommissions({});
             }} className={`px-4 md:px-5 py-3 rounded-xl font-black uppercase text-[9px] transition-all border ${isOverdue ? 'bg-red-600 text-white border-red-500 shadow-lg shadow-red-200' : 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-600 hover:text-white'}`}>
               Baixa
             </button>
@@ -305,11 +320,20 @@ const Dashboard: React.FC<DashboardProps> = ({
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[8px] font-black text-slate-300">R$</span>
                           <input
-                            type="number"
-                            step="0.01"
-                            value={editCommissions[pName] !== undefined ? editCommissions[pName].toFixed(2) : '0.00'}
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="0,00"
+                            value={localCommissions[pName] || ''}
                             onFocus={(e) => e.target.select()}
-                            onChange={e => setEditCommissions({ ...editCommissions, [pName]: parseFloat(e.target.value) || 0 })}
+                            onChange={e => {
+                              const val = e.target.value.replace(',', '.');
+                              setLocalCommissions({ ...localCommissions, [pName]: val });
+                              setEditCommissions({ ...editCommissions, [pName]: parseFloat(val) || 0 });
+                            }}
+                            onBlur={() => {
+                              const val = editCommissions[pName] || 0;
+                              setLocalCommissions({ ...localCommissions, [pName]: val === 0 ? '' : val.toFixed(2) });
+                            }}
                             className="w-24 pl-8 pr-4 py-2 rounded-xl bg-white border border-transparent focus:border-indigo-400 outline-none font-black text-slate-700 text-[11px] text-center transition-all shadow-sm"
                           />
                         </div>
@@ -325,12 +349,19 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <div className="relative max-w-[160px] mx-auto">
                   <span className="absolute left-5 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-300">R$</span>
                   <input
-                    type="number"
-                    step="0.01"
-                    value={finalValue === 0 ? '0.00' : finalValue.toFixed(2)}
-                    placeholder="0.00"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0,00"
+                    value={localFinalValue}
                     onFocus={(e) => e.target.select()}
-                    onChange={e => setFinalValue(parseFloat(e.target.value) || 0)}
+                    onChange={e => {
+                      const val = e.target.value.replace(',', '.');
+                      setLocalFinalValue(val);
+                      setFinalValue(parseFloat(val) || 0);
+                    }}
+                    onBlur={() => {
+                      setLocalFinalValue(finalValue === 0 ? '' : finalValue.toFixed(2));
+                    }}
                     className="w-full pl-10 pr-4 py-3 rounded-[1.5rem] border-2 border-slate-200 bg-white font-black text-xl text-center text-slate-700 outline-none transition-all focus:border-indigo-400"
                   />
                   <div className="absolute -top-1.5 -right-1.5 bg-slate-800 text-white w-5 h-5 rounded-full flex items-center justify-center shadow-lg"><i className="fas fa-edit text-[7px]"></i></div>
