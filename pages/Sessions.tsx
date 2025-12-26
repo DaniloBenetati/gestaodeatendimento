@@ -54,12 +54,35 @@ const Sessions: React.FC<SessionsProps> = ({ sessions, customers, providers, pri
   });
 
   const today = getBrazilDate();
-  const busyProviderNames = useMemo(() => {
-    const busy = new Set<string>();
-    const active = sessions.filter(s => s.date === today && s.status === 'PENDING' && !s.isFinished);
-    active.forEach(s => s.providerIds.forEach(p => busy.add(p)));
-    return busy;
-  }, [sessions, today]);
+
+  const getMinutes = (time: string) => {
+    if (!time || !time.includes(':')) return 0;
+    const [h, m] = time.split(':').map(Number);
+    return (h || 0) * 60 + (m || 0);
+  };
+
+  const isProviderBusy = useMemo(() => (pName: string, idx: number) => {
+    if (!pName) return false;
+
+    // 1. Check current form duplicates
+    const isSelectedElsewhere = selectedProviderIds.some((id, i) => i !== idx && id === pName);
+    if (isSelectedElsewhere) return true;
+
+    // 2. Check overlap with existing sessions
+    const sessionStartTime = getMinutes(formData.startTime);
+    const sessionEndTime = sessionStartTime + formData.customDuration;
+
+    return sessions.some(s => {
+      if (s.date !== formData.date || s.status === 'CANCELLED') return false;
+      if (!s.providerIds.includes(pName)) return false;
+
+      const sStart = getMinutes(s.startTime);
+      const sEnd = sStart + (s.durationMinutes || 60);
+
+      // Overlap logic: (StartA < EndB) and (EndA > StartB)
+      return (sessionStartTime < sEnd) && (sessionEndTime > sStart);
+    });
+  }, [sessions, formData.date, formData.startTime, formData.customDuration, selectedProviderIds]);
 
   useEffect(() => {
     if (sessionType === 'NOW') {
@@ -154,7 +177,7 @@ const Sessions: React.FC<SessionsProps> = ({ sessions, customers, providers, pri
       };
     });
 
-    onAddSession({
+    await onAddSession({
       customerId: customer.id,
       providerIds: validProviders,
       date: formData.date,
@@ -252,10 +275,7 @@ const Sessions: React.FC<SessionsProps> = ({ sessions, customers, providers, pri
                 }}>
                   <option value="">SELECIONAR PROFISSIONAL...</option>
                   {providers
-                    .filter(p => p.active &&
-                      (!busyProviderNames.has(p.name) || selectedProviderIds[idx] === p.name) &&
-                      (!selectedProviderIds.includes(p.name) || selectedProviderIds[idx] === p.name)
-                    )
+                    .filter(p => p.active && (!isProviderBusy(p.name, idx) || selectedProviderIds[idx] === p.name))
                     .map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
                 </select>
               ))}
