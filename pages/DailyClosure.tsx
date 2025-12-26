@@ -269,7 +269,7 @@ const DailyClosure: React.FC<ClosureProps> = ({ sessions, providers, customers, 
                               </div>
                             </td>
                             <td className="px-3 md:px-6 py-4 text-center text-[10px] md:text-[11px] font-black text-indigo-600 uppercase whitespace-nowrap">
-                              {formatTimeDisplay(d.billedDuration)}
+                              {formatTimeDisplay(d.duration)}
                             </td>
                             <td className="px-3 md:px-6 py-4 text-center">
                               <span className={`text-[7px] md:text-[8px] font-black px-2 py-1 rounded-lg border uppercase whitespace-nowrap ${d.status === 'PAID' ? 'bg-emerald-50 text-emerald-500 border-emerald-100' : 'bg-amber-50 text-amber-500 border-amber-100'}`}>
