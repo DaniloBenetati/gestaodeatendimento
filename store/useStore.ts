@@ -320,12 +320,18 @@ export const useStore = () => {
       is_finished: sessionData.isFinished || false,
       recorded_by: currentUser?.id || 'system',
       commissions: sessionData.commissions || [],
-      price_rule_id: sessionData.priceRuleId
     };
 
+    console.log("Iniciando addSession:", newSession);
     const { data, error } = await supabase.from('sessions').insert(newSession).select().single();
 
+    if (error) {
+      console.error("ERRO SUPABASE addSession:", error);
+      alert("ERRO AO SALVAR NO BANCO: " + error.message);
+    }
+
     if (!error && data) {
+      console.log("SESSÃO SALVA COM SUCESSO:", data);
       // Mapear de volta para frontend camelCase
       const formattedSession: Session = {
         ...data,
