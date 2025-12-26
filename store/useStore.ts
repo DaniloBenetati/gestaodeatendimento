@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { User, Customer, Provider, Session, PaymentMethod, ProviderCommission, PricingRule, DrinkProduct, DrinkOrder } from '../types';
+import { User, Customer, Provider, Session, PaymentMethod, ProviderCommission, PricingRule, DrinkProduct, DrinkOrder, Supply } from '../types';
 
 const getBrazilDate = () => {
   const now = new Date();
@@ -157,6 +157,7 @@ export const useStore = () => {
   const [pricing, setPricing] = useState<PricingRule[]>([]);
   const [drinkProducts, setDrinkProducts] = useState<DrinkProduct[]>([]);
   const [drinkOrders, setDrinkOrders] = useState<DrinkOrder[]>([]);
+  const [supplies, setSupplies] = useState<Supply[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Função para carregar dados do Supabase
@@ -170,7 +171,8 @@ export const useStore = () => {
         { data: msgPricing },
         { data: msgDrinkProducts },
         { data: msgDrinkOrders },
-        { data: msgProfiles }
+        { data: msgProfiles },
+        { data: msgSupplies }
       ] = await Promise.all([
         supabase.from('providers').select('*'),
         supabase.from('customers').select('*'),
@@ -178,7 +180,8 @@ export const useStore = () => {
         supabase.from('pricing_rules').select('*'),
         supabase.from('drink_products').select('*'),
         supabase.from('drink_orders').select('*'),
-        supabase.from('profiles').select('*')
+        supabase.from('profiles').select('*'),
+        supabase.from('supplies').select('*')
       ]);
 
       if (msgProviders) setProviders(msgProviders.map(p => ({
@@ -229,6 +232,13 @@ export const useStore = () => {
       })));
 
       if (msgProfiles) setUsers(msgProfiles);
+
+      if (msgSupplies) setSupplies(msgSupplies.map(s => ({
+        ...s,
+        effectiveDate: s.effective_date,
+        createdAt: s.created_at,
+        updatedAt: s.updated_at
+      })));
 
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
@@ -580,6 +590,44 @@ export const useStore = () => {
     if (!error) setProviders(prev => prev.filter(p => p.id !== id));
   };
 
+  // Supplies CRUD
+  const addSupply = async (supply: Omit<Supply, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const dbSupply = {
+      name: supply.name,
+      description: supply.description,
+      value: supply.value,
+      active: supply.active,
+      effective_date: supply.effectiveDate
+    };
+    const { data, error } = await supabase.from('supplies').insert(dbSupply).select().single();
+    if (!error && data) {
+      const newSupply: Supply = {
+        ...data,
+        effectiveDate: data.effective_date,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+      };
+      setSupplies(prev => [...prev, newSupply]);
+    }
+  };
+
+  const updateSupply = async (id: string, updates: Partial<Supply>) => {
+    const dbUpdates: any = {};
+    if (updates.name !== undefined) dbUpdates.name = updates.name;
+    if (updates.description !== undefined) dbUpdates.description = updates.description;
+    if (updates.value !== undefined) dbUpdates.value = updates.value;
+    if (updates.active !== undefined) dbUpdates.active = updates.active;
+    if (updates.effectiveDate !== undefined) dbUpdates.effective_date = updates.effectiveDate;
+
+    const { error } = await supabase.from('supplies').update(dbUpdates).eq('id', id);
+    if (!error) setSupplies(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+  };
+
+  const deleteSupply = async (id: string) => {
+    const { error } = await supabase.from('supplies').delete().eq('id', id);
+    if (!error) setSupplies(prev => prev.filter(s => s.id !== id));
+  };
+
   return {
     currentUser, login, logout, users, updateUser,
     providers, setProviders, addProvider, updateProvider, deleteProvider,
@@ -588,6 +636,7 @@ export const useStore = () => {
     pricing, addPricingRule, updatePricingRule, deletePricingRule, setPricing,
     drinkProducts, addDrinkProduct, updateDrinkProduct,
     drinkOrders, addDrinkOrder, updateDrinkOrder,
+    supplies, addSupply, updateSupply, deleteSupply,
     markCommissionPaid
   };
 };

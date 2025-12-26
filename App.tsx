@@ -15,6 +15,7 @@ import Customers from './pages/Customers';
 import Users from './pages/Users';
 import Manual from './pages/Manual';
 import PricingRules from './pages/PricingRules';
+import Supplies from './pages/Supplies';
 import Drinks from './pages/Drinks';
 import { Session, User } from './types';
 
@@ -198,6 +199,7 @@ const App: React.FC = () => {
           <Route path="/customers" element={<Customers customers={store.customers} sessions={store.sessions} onUpdate={store.updateCustomer} onAdd={store.addCustomer} />} />
           <Route path="/providers" element={<Providers providers={store.providers} onAdd={store.addProvider} onDelete={store.deleteProvider} onUpdate={store.updateProvider} />} />
           <Route path="/pricing" element={(store.currentUser.role === 'ADMIN' || store.currentUser.role === 'MANAGER') ? <PricingRules pricing={store.pricing} onAddPricingRule={store.addPricingRule} onUpdatePricingRule={store.updatePricingRule} onDeletePricingRule={store.deletePricingRule} showNotification={showNotification} /> : <Navigate to="/" />} />
+          <Route path="/supplies" element={(store.currentUser.role === 'ADMIN' || store.currentUser.role === 'MANAGER') ? <Supplies supplies={store.supplies} onAddSupply={store.addSupply} onUpdateSupply={store.updateSupply} onDeleteSupply={store.deleteSupply} showNotification={showNotification} /> : <Navigate to="/" />} />
           <Route path="/users" element={store.currentUser.role === 'ADMIN' ? <Users users={store.users} onAdd={() => { }} onUpdate={store.updateUser} onDelete={() => { }} /> : <Navigate to="/" />} />
           <Route path="/manual" element={<Manual />} />
           <Route path="/closure" element={(store.currentUser.role === 'ADMIN' || store.currentUser.role === 'MANAGER') ? <DailyClosure sessions={store.sessions} providers={store.providers} customers={store.customers} pricing={store.pricing} onMarkPaid={store.markCommissionPaid} showNotification={showNotification} /> : <Navigate to="/" />} />

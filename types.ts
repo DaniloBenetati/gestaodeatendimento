@@ -58,7 +58,7 @@ export interface Session {
   customerId: string;
   providerIds: string[];
   date: string;
-  startTime: string; 
+  startTime: string;
   endTime?: string;
   durationMinutes: number;
   billedDurationMinutes?: number;
@@ -80,6 +80,29 @@ export interface Session {
     regular: number;
     loyalty: number;
   };
+  supplies?: SessionSupply[];
+}
+
+export interface Supply {
+  id: string;
+  name: string;
+  description?: string;
+  value: number;
+  active: boolean;
+  effectiveDate: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SessionSupply {
+  id: string;
+  sessionId: string;
+  supplyId: string;
+  providerId: string;
+  quantity: number;
+  unitValue: number;
+  totalValue: number;
+  createdAt: string;
 }
 
 // --- MÓDULO DE BEBIDAS ---
@@ -101,8 +124,8 @@ export interface DrinkOrderItem {
 
 export interface DrinkOrder {
   id: string;
-  customerId?: string; 
-  customerName: string; 
+  customerId?: string;
+  customerName: string;
   items: DrinkOrderItem[];
   totalValue: number;
   status: 'OPEN' | 'PAID' | 'CANCELLED';
