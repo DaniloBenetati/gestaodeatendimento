@@ -308,6 +308,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                             type="number"
                             step="0.01"
                             value={editCommissions[pName] !== undefined ? editCommissions[pName].toFixed(2) : '0.00'}
+                            onFocus={(e) => e.target.select()}
                             onChange={e => setEditCommissions({ ...editCommissions, [pName]: parseFloat(e.target.value) || 0 })}
                             className="w-24 pl-8 pr-4 py-2 rounded-xl bg-white border border-transparent focus:border-indigo-400 outline-none font-black text-slate-700 text-[11px] text-center transition-all shadow-sm"
                           />
@@ -328,6 +329,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     step="0.01"
                     value={finalValue === 0 ? '0.00' : finalValue.toFixed(2)}
                     placeholder="0.00"
+                    onFocus={(e) => e.target.select()}
                     onChange={e => setFinalValue(parseFloat(e.target.value) || 0)}
                     className="w-full pl-10 pr-4 py-3 rounded-[1.5rem] border-2 border-slate-200 bg-white font-black text-xl text-center text-slate-700 outline-none transition-all focus:border-indigo-400"
                   />
