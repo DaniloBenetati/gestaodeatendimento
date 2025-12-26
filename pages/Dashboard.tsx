@@ -157,6 +157,45 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [actualStartTime, actualEndTime, finishingSession, pricing]);
 
+  // Recalcular preço e comissão quando duração considerada mudar manualmente
+  useEffect(() => {
+    if (finishingSession && consideredDuration > 0) {
+      const customer = getCustomer(finishingSession.customerId);
+      const isVIP = customer?.isLoyalty || false;
+      const isMultiple = finishingSession.providerIds.length > 1;
+
+      // Só recalcula automaticamente se for sessão de 1 profissional
+      if (!isMultiple) {
+        const hours = Math.floor(consideredDuration / 60);
+        const hasHalfHour = (consideredDuration % 60) === 30;
+
+        const rule1h = pricing.find(r => r.durationMinutes === 60);
+        const rule30m = pricing.find(r => r.durationMinutes === 30);
+
+        const priceH = isVIP ? (rule1h?.loyaltyPrice || 230) : (rule1h?.regularPrice || 290);
+        const price30 = isVIP ? (rule30m?.loyaltyPrice || 190) : (rule30m?.regularPrice || 190);
+        const calculatedTotal = (hours * priceH) + (hasHalfHour ? price30 : 0);
+
+        setFinalValue(calculatedTotal || 0);
+        setLocalFinalValue(calculatedTotal > 0 ? calculatedTotal.toFixed(2) : '');
+
+        // Recalcular comissão
+        const commH = isVIP ? (rule1h?.loyaltyCommission || 150) : (rule1h?.regularCommission || 170);
+        const comm30 = isVIP ? (rule30m?.loyaltyCommission || 90) : (rule30m?.regularCommission || 90);
+        const calculatedComm = (hours * commH) + (hasHalfHour ? comm30 : 0);
+
+        setEditCommissions(prev => {
+          const updated = { ...prev };
+          finishingSession.providerIds.forEach(pName => {
+            updated[pName] = calculatedComm;
+            setLocalCommissions(loc => ({ ...loc, [pName]: calculatedComm > 0 ? calculatedComm.toFixed(2) : '' }));
+          });
+          return updated;
+        });
+      }
+    }
+  }, [consideredDuration, finishingSession, pricing]);
+
   const handleStartSession = (session: Session) => {
     const timeNow = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     onUpdateSession(session.id, { status: 'PENDING', startTime: timeNow });
