@@ -321,17 +321,17 @@ const Dashboard: React.FC<DashboardProps> = ({
               <div className="text-center space-y-4 pt-2">
                 <div className="inline-block px-4 py-1.5 bg-slate-100 rounded-full text-[8px] font-black text-slate-500 uppercase tracking-widest">Valor do Serviço / Desconto</div>
 
-                <div className="relative max-w-[200px] mx-auto">
-                  <span className="absolute left-6 top-1/2 -translate-y-1/2 text-[12px] font-black text-slate-300">R$</span>
+                <div className="relative max-w-[160px] mx-auto">
+                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-300">R$</span>
                   <input
                     type="number"
                     step="0.01"
                     value={finalValue === 0 ? '0.00' : finalValue.toFixed(2)}
                     placeholder="0.00"
                     onChange={e => setFinalValue(parseFloat(e.target.value) || 0)}
-                    className="w-full pl-12 pr-6 py-4 rounded-[2rem] border-2 border-slate-200 bg-white font-black text-2xl text-center text-slate-700 outline-none transition-all focus:border-indigo-400"
+                    className="w-full pl-10 pr-4 py-3 rounded-[1.5rem] border-2 border-slate-200 bg-white font-black text-xl text-center text-slate-700 outline-none transition-all focus:border-indigo-400"
                   />
-                  <div className="absolute -top-2 -right-2 bg-slate-800 text-white w-6 h-6 rounded-full flex items-center justify-center shadow-lg"><i className="fas fa-edit text-[8px]"></i></div>
+                  <div className="absolute -top-1.5 -right-1.5 bg-slate-800 text-white w-5 h-5 rounded-full flex items-center justify-center shadow-lg"><i className="fas fa-edit text-[7px]"></i></div>
                 </div>
 
                 {finalMethod === 'CARTÃO' && (
@@ -342,8 +342,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                 )}
 
                 <div className="pt-4 border-t border-slate-100">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Total a Pagar</p>
-                  <div className="text-5xl font-black text-emerald-600 tracking-tighter">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Total a Pagar</p>
+                  <div className="text-4xl font-black text-emerald-600 tracking-tighter">
                     {formatCurrency(finalMethod === 'CARTÃO' ? finalValue + 20 : finalValue)}
                   </div>
                 </div>
