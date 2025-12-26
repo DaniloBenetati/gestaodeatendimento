@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Customer, Provider, PricingRule, Session, PaymentMethod } from '../types';
 
 interface SessionsProps {
@@ -53,6 +53,14 @@ const Sessions: React.FC<SessionsProps> = ({ sessions, customers, providers, pri
     customValue: 150
   });
 
+  const today = getBrazilDate();
+  const busyProviderNames = useMemo(() => {
+    const busy = new Set<string>();
+    const active = sessions.filter(s => s.date === today && s.status === 'PENDING' && !s.isFinished);
+    active.forEach(s => s.providerIds.forEach(p => busy.add(p)));
+    return busy;
+  }, [sessions, today]);
+
   useEffect(() => {
     if (sessionType === 'NOW') {
       const interval = setInterval(() => {
@@ -102,20 +110,22 @@ const Sessions: React.FC<SessionsProps> = ({ sessions, customers, providers, pri
     }
   }, [formData.customDuration, formData.isLoyalty, pricing, providerCount]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const validProviders = selectedProviderIds.filter(id => id !== '');
     if (validProviders.length === 0) { showNotification("Selecione um profissional.", "error"); return; }
 
     let customer = customers.find(c => c.name.toLowerCase() === formData.customerName.toLowerCase());
     if (!customer) {
-      customer = onAddCustomer({
+      customer = await onAddCustomer({
         name: formData.customerName,
         phone: formData.customerPhone,
         isLoyalty: formData.isLoyalty,
         loyaltyNickname: formData.loyaltyNickname
       });
     }
+
+    if (!customer) { showNotification("Erro ao processar cliente.", "error"); return; }
 
     const isPaidNow = formData.paymentTiming === 'NOW';
     const rule = pricing.find(r => r.id === formData.priceRuleId);
@@ -242,7 +252,10 @@ const Sessions: React.FC<SessionsProps> = ({ sessions, customers, providers, pri
                 }}>
                   <option value="">SELECIONAR PROFISSIONAL...</option>
                   {providers
-                    .filter(p => p.active && (!selectedProviderIds.includes(p.name) || selectedProviderIds[idx] === p.name))
+                    .filter(p => p.active &&
+                      (!busyProviderNames.has(p.name) || selectedProviderIds[idx] === p.name) &&
+                      (!selectedProviderIds.includes(p.name) || selectedProviderIds[idx] === p.name)
+                    )
                     .map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
                 </select>
               ))}

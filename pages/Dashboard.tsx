@@ -279,6 +279,12 @@ const Dashboard: React.FC<DashboardProps> = ({
                     </span>
                   )}
                 </div>
+                {finishingSession && (
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
+                    {finishingSession.providerIds.length > 1 ? 'Profissionais: ' : 'Profissional: '}
+                    <span className="text-slate-600">{finishingSession.providerIds.join(', ')}</span>
+                  </p>
+                )}
               </div>
               <button onClick={() => setFinishingSession(null)} className="w-10 h-10 rounded-full bg-white border border-slate-200 text-slate-400 shrink-0"><i className="fas fa-times"></i></button>
             </div>
