@@ -200,7 +200,7 @@ const App: React.FC = () => {
           <Route path="/pricing" element={(store.currentUser.role === 'ADMIN' || store.currentUser.role === 'MANAGER') ? <PricingRules pricing={store.pricing} onAddPricingRule={store.addPricingRule} onUpdatePricingRule={store.updatePricingRule} onDeletePricingRule={store.deletePricingRule} showNotification={showNotification} /> : <Navigate to="/" />} />
           <Route path="/users" element={store.currentUser.role === 'ADMIN' ? <Users users={store.users} onAdd={() => { }} onUpdate={store.updateUser} onDelete={() => { }} /> : <Navigate to="/" />} />
           <Route path="/manual" element={<Manual />} />
-          <Route path="/closure" element={(store.currentUser.role === 'ADMIN' || store.currentUser.role === 'MANAGER') ? <DailyClosure sessions={store.sessions} providers={store.providers} customers={store.customers} onMarkPaid={store.markCommissionPaid} showNotification={showNotification} /> : <Navigate to="/" />} />
+          <Route path="/closure" element={(store.currentUser.role === 'ADMIN' || store.currentUser.role === 'MANAGER') ? <DailyClosure sessions={store.sessions} providers={store.providers} customers={store.customers} pricing={store.pricing} onMarkPaid={store.markCommissionPaid} showNotification={showNotification} /> : <Navigate to="/" />} />
           <Route path="/reports" element={(store.currentUser.role === 'ADMIN' || store.currentUser.role === 'MANAGER') ? <Reports sessions={store.sessions} providers={store.providers} customers={store.customers} pricing={store.pricing} drinkOrders={store.drinkOrders} /> : <Navigate to="/" />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

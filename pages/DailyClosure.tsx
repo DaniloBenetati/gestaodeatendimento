@@ -1,16 +1,17 @@
 
 import React, { useState, useMemo } from 'react';
-import { Session, PaymentMethod, Provider, Customer } from '../types';
+import { Session, PaymentMethod, Provider, Customer, PricingRule } from '../types';
 
 interface ClosureProps {
   sessions: Session[];
   providers: Provider[];
   customers: Customer[];
+  pricing: PricingRule[];
   onMarkPaid: (providerName: string, sessionIds: string[], method: PaymentMethod) => void;
   showNotification: (msg: string, type: 'success' | 'error') => void;
 }
 
-const DailyClosure: React.FC<ClosureProps> = ({ sessions, providers, customers, onMarkPaid, showNotification }) => {
+const DailyClosure: React.FC<ClosureProps> = ({ sessions, providers, customers, pricing, onMarkPaid, showNotification }) => {
   const [viewMode, setViewMode] = useState<'DAILY' | 'MONTHLY' | 'ANNUAL'>('DAILY');
   const [selectedMethods, setSelectedMethods] = useState<Record<string, PaymentMethod>>({});
   const [expandedProvider, setExpandedProvider] = useState<string | null>(null);
@@ -61,6 +62,10 @@ const DailyClosure: React.FC<ClosureProps> = ({ sessions, providers, customers, 
         const customer = customers.find(c => c.id === s.customerId);
         const commObj = s.commissions?.find(c => c.providerId === p.name);
 
+        // Buscar a duração da regra de negócio contratada
+        const priceRule = pricing.find(r => r.id === s.priceRuleId);
+        const contractedDuration = priceRule?.durationMinutes || s.durationMinutes;
+
         return {
           sessionId: s.id,
           client: customer?.name || 'Cliente',
@@ -68,7 +73,7 @@ const DailyClosure: React.FC<ClosureProps> = ({ sessions, providers, customers, 
           isVIP: customer?.isLoyalty || false,
           time: s.startTime,
           endTime: s.endTime,
-          duration: s.durationMinutes,
+          duration: contractedDuration,
           billedDuration: s.billedDurationMinutes || s.durationMinutes,
           date: s.date,
           value: Math.round(commObj?.value || 0),
@@ -93,7 +98,7 @@ const DailyClosure: React.FC<ClosureProps> = ({ sessions, providers, customers, 
         hasHistory: sessionDetails.length > 0
       };
     }).filter(p => p.hasHistory);
-  }, [filteredSessions, providers, customers]);
+  }, [filteredSessions, providers, customers, pricing]);
 
   const handleSendWhatsApp = (provider: any) => {
     const periodLabel = viewMode === 'DAILY' ? viewDate.split('-').reverse().join('/') :
