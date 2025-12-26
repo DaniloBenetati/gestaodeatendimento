@@ -62,9 +62,16 @@ const DailyClosure: React.FC<ClosureProps> = ({ sessions, providers, customers, 
         const customer = customers.find(c => c.id === s.customerId);
         const commObj = s.commissions?.find(c => c.providerId === p.name);
 
-        // Buscar a duração da regra de negócio contratada
-        const priceRule = pricing.find(r => r.id === s.priceRuleId);
-        const contractedDuration = priceRule?.durationMinutes || s.durationMinutes;
+        // Priorizar billedDurationMinutes (ajustado manualmente), senão usar regra de negócio
+        let displayDuration = s.durationMinutes;
+        if (s.billedDurationMinutes) {
+          displayDuration = s.billedDurationMinutes;
+        } else {
+          const priceRule = pricing.find(r => r.id === s.priceRuleId);
+          if (priceRule) {
+            displayDuration = priceRule.durationMinutes;
+          }
+        }
 
         return {
           sessionId: s.id,
@@ -73,7 +80,7 @@ const DailyClosure: React.FC<ClosureProps> = ({ sessions, providers, customers, 
           isVIP: customer?.isLoyalty || false,
           time: s.startTime,
           endTime: s.endTime,
-          duration: contractedDuration,
+          duration: displayDuration,
           billedDuration: s.billedDurationMinutes || s.durationMinutes,
           date: s.date,
           value: Math.round(commObj?.value || 0),

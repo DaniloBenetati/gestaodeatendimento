@@ -309,7 +309,15 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <div className="w-px h-8 bg-slate-200"></div>
                 <div className="text-center">
                   <p className="text-[7px] font-black text-indigo-400 uppercase tracking-widest mb-1">Considerado</p>
-                  <p className="text-xl font-black text-indigo-600 leading-none">{(isNaN(consideredDuration) || consideredDuration <= 0) ? '--:--' : formatTimeDisplay(consideredDuration)}</p>
+                  <select
+                    value={consideredDuration}
+                    onChange={(e) => setConsideredDuration(Number(e.target.value))}
+                    className="text-xl font-black text-indigo-600 leading-none bg-transparent border-2 border-indigo-200 rounded-lg px-3 py-1 outline-none hover:border-indigo-400 transition-colors cursor-pointer"
+                  >
+                    {[30, 60, 90, 120, 150, 180, 210, 240, 270, 300].map(mins => (
+                      <option key={mins} value={mins}>{formatTimeDisplay(mins)}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
