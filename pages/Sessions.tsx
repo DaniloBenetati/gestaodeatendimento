@@ -241,7 +241,9 @@ const Sessions: React.FC<SessionsProps> = ({ sessions, customers, providers, pri
                   setSelectedProviderIds(newIds);
                 }}>
                   <option value="">SELECIONAR PROFISSIONAL...</option>
-                  {providers.filter(p => p.active).map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                  {providers
+                    .filter(p => p.active && (!selectedProviderIds.includes(p.name) || selectedProviderIds[idx] === p.name))
+                    .map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
                 </select>
               ))}
             </div>
