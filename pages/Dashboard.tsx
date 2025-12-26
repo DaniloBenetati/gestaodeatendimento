@@ -126,12 +126,12 @@ const Dashboard: React.FC<DashboardProps> = ({
       const price30 = isVIP ? (rule30m?.loyaltyPrice || 190) : (rule30m?.regularPrice || 190);
 
       const calculatedTotal = (hours * priceH) + (hasHalfHour ? price30 : 0);
-      setFinalValue(Math.round(calculatedTotal) || 0);
+      setFinalValue(calculatedTotal || 0);
 
       // Comissões
       const commH = isVIP ? (rule1h?.loyaltyCommission || 150) : (rule1h?.regularCommission || 170);
       const comm30 = isVIP ? (rule30m?.loyaltyCommission || 90) : (rule30m?.regularCommission || 90);
-      const defaultComm = Math.round((hours * commH) + (hasHalfHour ? comm30 : 0)) || 0;
+      const defaultComm = (hours * commH) + (hasHalfHour ? comm30 : 0) || 0;
 
       setEditCommissions(prev => {
         const updated = { ...prev };
@@ -160,11 +160,11 @@ const Dashboard: React.FC<DashboardProps> = ({
 
     const chargingValue = finalMethod === 'CARTÃO' ? finalValue + 20 : finalValue;
 
-    onConfirm(finishingSession.id, finalMethod, Math.round(chargingValue), finalCommissions);
+    onConfirm(finishingSession.id, finalMethod, chargingValue, finalCommissions);
     onUpdateSession(finishingSession.id, {
       status: 'PAID',
       isFinished: true,
-      totalValue: Math.round(chargingValue),
+      totalValue: chargingValue,
       startTime: actualStartTime,
       endTime: actualEndTime,
       durationMinutes: finalDuration,
@@ -305,8 +305,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[8px] font-black text-slate-300">R$</span>
                           <input
                             type="number"
-                            value={editCommissions[pName] || 0}
-                            onChange={e => setEditCommissions({ ...editCommissions, [pName]: Math.round(parseFloat(e.target.value) || 0) })}
+                            step="0.01"
+                            value={editCommissions[pName] !== undefined ? editCommissions[pName].toFixed(2) : '0.00'}
+                            onChange={e => setEditCommissions({ ...editCommissions, [pName]: parseFloat(e.target.value) || 0 })}
                             className="w-24 pl-8 pr-4 py-2 rounded-xl bg-white border border-transparent focus:border-indigo-400 outline-none font-black text-slate-700 text-[11px] text-center transition-all shadow-sm"
                           />
                         </div>
@@ -318,13 +319,16 @@ const Dashboard: React.FC<DashboardProps> = ({
 
               <div className="text-center space-y-4 pt-2">
                 <div className="inline-block px-4 py-1.5 bg-slate-100 rounded-full text-[8px] font-black text-slate-500 uppercase tracking-widest">Valor do Serviço / Desconto</div>
-                <div className="relative">
+                
+                <div className="relative max-w-[200px] mx-auto">
+                  <span className="absolute left-6 top-1/2 -translate-y-1/2 text-[12px] font-black text-slate-300">R$</span>
                   <input
                     type="number"
-                    value={finalValue === 0 ? '' : finalValue}
-                    placeholder="0"
-                    onChange={e => setFinalValue(Math.round(parseFloat(e.target.value) || 0))}
-                    className="w-full px-6 py-4 rounded-[2rem] border-2 border-slate-200 bg-white font-black text-3xl text-center text-slate-700 outline-none transition-all focus:border-indigo-400"
+                    step="0.01"
+                    value={finalValue === 0 ? '0.00' : finalValue.toFixed(2)}
+                    placeholder="0.00"
+                    onChange={e => setFinalValue(parseFloat(e.target.value) || 0)}
+                    className="w-full pl-12 pr-6 py-4 rounded-[2rem] border-2 border-slate-200 bg-white font-black text-2xl text-center text-slate-700 outline-none transition-all focus:border-indigo-400"
                   />
                   <div className="absolute -top-2 -right-2 bg-slate-800 text-white w-6 h-6 rounded-full flex items-center justify-center shadow-lg"><i className="fas fa-edit text-[8px]"></i></div>
                 </div>
