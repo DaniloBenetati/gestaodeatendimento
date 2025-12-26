@@ -125,13 +125,14 @@ const Dashboard: React.FC<DashboardProps> = ({
       const priceH = isVIP ? (rule1h?.loyaltyPrice || 230) : (rule1h?.regularPrice || 290);
       const price30 = isVIP ? (rule30m?.loyaltyPrice || 190) : (rule30m?.regularPrice || 190);
 
-      const calculatedTotal = (hours * priceH) + (hasHalfHour ? price30 : 0);
+      const isMultiple = finishingSession.providerIds.length > 1;
+      const calculatedTotal = isMultiple ? 0 : (hours * priceH) + (hasHalfHour ? price30 : 0);
       setFinalValue(calculatedTotal || 0);
 
       // Comissões
       const commH = isVIP ? (rule1h?.loyaltyCommission || 150) : (rule1h?.regularCommission || 170);
       const comm30 = isVIP ? (rule30m?.loyaltyCommission || 90) : (rule30m?.regularCommission || 90);
-      const defaultComm = (hours * commH) + (hasHalfHour ? comm30 : 0) || 0;
+      const defaultComm = isMultiple ? 0 : (hours * commH) + (hasHalfHour ? comm30 : 0) || 0;
 
       setEditCommissions(prev => {
         const updated = { ...prev };
@@ -319,7 +320,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
               <div className="text-center space-y-4 pt-2">
                 <div className="inline-block px-4 py-1.5 bg-slate-100 rounded-full text-[8px] font-black text-slate-500 uppercase tracking-widest">Valor do Serviço / Desconto</div>
-                
+
                 <div className="relative max-w-[200px] mx-auto">
                   <span className="absolute left-6 top-1/2 -translate-y-1/2 text-[12px] font-black text-slate-300">R$</span>
                   <input
